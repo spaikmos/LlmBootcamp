@@ -34,8 +34,9 @@ you know the answer to, respond directly using your own knowledge base.Examples:
 3)  When the user asks for current showtimes, use the get_showtimes function.
 4)  When the user asks for reviews, use the get_reviews function.
 5)  When the user asks to purchase a ticket, use the buy_ticket function.
-6)  After a function call, the function's response will be passed to you as a system message.  Look at the function return value and respond to the user.
-
+6)  When puchasing a ticket, you must use confirm_ticket_purchase function to complete the transaction.
+7)  After a function call, the function's response will be passed to you as a system message.  Look at the function return value and respond to the user.
+8)  Whenever you make a function call, reply with ONLY the function, no extra text.
 To make a function call, create a JSON block of text similar to the following examples:
 
 get_now_playing_movies example:
@@ -58,13 +59,19 @@ buy_ticket example:
   "showtime":"<TIME>",
 }
 
+confirm_ticket_purchase example:
+{
+  "function":"confirm_ticket_purchase",
+  "theater":"<THEATER NAME>",
+  "movie":"<MOVIE TITLE>",
+  "showtime":"<TIME>",
+}
+
 get_reviews example:
 {
   "function":"get_reviews",
-  "movie":"<MOVIE TITLE>"
+  "movie":"<MOVIE_ID>"
 }
-
-When sending a function call, there must be no extra text around it. Only the JSON function.
 """
 
 #Use the TMDB Function: When a user requests specific or up-to-date information about a movie or a list of movies (e.g., latest releases, trending films, or details on an obscure title), and you do not have that information or the data might have changed, call the TMDB function to fetch the required data.Examples:
@@ -101,14 +108,19 @@ async def on_message(message: cl.Message):
     response_message = await generate_response(client, message_history, gen_kwargs)
 
     try:
-        function_call = json.loads(response_message.content)
-        if "function" in function_call and function_call["function"] == "get_now_playing_movies":
-            current_movies = get_now_playing_movies()
-            message_history.append({"role": "system", "content": current_movies})
-            response_message = await generate_response(client, message_history, gen_kwargs)
-        if "function" in function_call and function_call["function"] == "get_showtimes":
-            showtimes = get_showtimes(function_call["title"], function_call["location"])
-            message_history.append({"role": "system", "content": showtimes})
+        while True:
+            function_call = json.loads(response_message.content)
+            if "function" in function_call and function_call["function"] == "get_now_playing_movies":
+                response = get_now_playing_movies()
+            if "function" in function_call and function_call["function"] == "get_showtimes":
+                response = get_showtimes(function_call["title"], function_call["location"])
+            if "function" in function_call and function_call["function"] == "buy_ticket":
+                response = buy_ticket(function_call["theater"], function_call["movie"], function_call["showtime"])
+            if "function" in function_call and function_call["function"] == "get_reviews":
+                response = get_reviews(function_call["movie"])
+            if "function" in function_call and function_call["function"] == "confirm_ticket_purchase":
+                response = confirm_ticket_purchase(function_call["theater"], function_call["movie"], function_call["showtime"])
+            message_history.append({"role": "system", "content": response})
             response_message = await generate_response(client, message_history, gen_kwargs)
     except json.JSONDecodeError:
         pass

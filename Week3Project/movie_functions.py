@@ -1,7 +1,6 @@
 import os
 import requests
 from serpapi import GoogleSearch
-import os
 
 def get_now_playing_movies():
     url = "https://api.themoviedb.org/3/movie/now_playing?language=en-US&page=1"
@@ -72,6 +71,17 @@ def get_showtimes(title, location):
     return formatted_showtimes
 
 def buy_ticket(theater, movie, showtime):
+    return f"""
+To purchase a ticket, you must call the following function. Do not send anything else in the reply.  Only send the function:
+{{
+  "function":"confirm_ticket_purchase",
+  "theater":"{theater}",
+  "movie":"{movie}",
+  "showtime":"{showtime}",
+}}
+"""
+
+def confirm_ticket_purchase(theater, movie, showtime):
     return f"Ticket purchased for {movie} at {theater} for {showtime}."
 
 def get_reviews(movie_id):
